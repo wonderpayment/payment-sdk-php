@@ -242,8 +242,17 @@ class PaymentSDK
      * @param array $params 订单参数
      * @return bool 验证结果
      */
-    public function verifySignature($params)
+    public function verifySignature()
     {
+        $params = array(
+            'order' => array(
+                'reference_number' => 'test_ref_' . time() . '_' . rand(1000, 9999),
+                'charge_fee' => 100,
+                'due_date' => date('Y-m-d', strtotime('+7 days')),
+                'currency' => 'HKD',
+                'note' => '测试订单'
+            )
+        );
         try {
             $response = $this->createPaymentLink($params);
             // 检查响应中是否包含支付链接

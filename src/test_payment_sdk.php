@@ -73,7 +73,7 @@ try {
     );
     // 测试 verify 方法
     echo "测试 verify() 方法...\n";
-    $verifyResult = $sdk->verifySignature($params);
+    $verifyResult = $sdk->verifySignature();
     echo "验证结果: " . ($verifyResult ? '成功' : '失败') . "\n";
     
     echo "createPaymentLink 方法将使用内部认证功能...\n";
