@@ -70,6 +70,7 @@ try {
     // 测试 createPaymentLink 方法（参数验证部分）
     echo "测试 createPaymentLink() 方法的参数验证...\n";
     try {
+        $params["order"]["reference_number"]="test_ref_" . time();
         $result = $sdk->createPaymentLink($params);
         echo "支付链接创建成功\n";
         echo "完整响应: \n";
