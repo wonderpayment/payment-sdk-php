@@ -4,8 +4,16 @@
 
 class PaymentSDK
 {
+    /**
+     * array(
+     * 'appid' => '',
+     * 'signaturePrivateKey' => '',
+     * 'webhookVerifyPublicKey' = > '',
+     * 'callback_url' => '',
+     * 'redirect_url' => ''
+     * )
+     */
     private $options;
-
     public function __construct($options) {
         $this->options = $options;
     }
