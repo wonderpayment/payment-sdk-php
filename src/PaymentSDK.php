@@ -343,4 +343,39 @@ class PaymentSDK
             'Nonce' => ''
         );
     }
+    /**
+     * 生成RSA密钥对
+     *
+     * @param int $keyBits 密钥长度，默认4096
+     * @return array 包含私钥和公钥的数组
+     */
+    public static function generateKeyPair($keyBits = 4096)
+    {
+        $config = array(
+            'digest_alg' => 'sha256',
+            'private_key_bits' => $keyBits,
+            'private_key_type' => OPENSSL_KEYTYPE_RSA,
+        );
+
+        $res = openssl_pkey_new($config);
+
+        if (!$res) {
+            throw new Exception('无法生成RSA密钥对');
+        }
+
+        // 提取私钥
+        openssl_pkey_export($res, $privateKey);
+
+        // 提取公钥
+        $publicKeyDetails = openssl_pkey_get_details($res);
+        $publicKey = $publicKeyDetails['key'];
+
+        // 释放资源
+        openssl_pkey_free($res);
+
+        return array(
+            'private_key' => $privateKey,
+            'public_key' => $publicKey
+        );
+    }
 }
