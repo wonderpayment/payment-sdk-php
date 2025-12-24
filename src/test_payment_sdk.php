@@ -4,24 +4,35 @@
 // 包含必要的文件
 require_once dirname(__FILE__) . '/PaymentSDK.php';
 
+// 从文件中读取私钥
+$privateKeyFile = dirname(__DIR__) . '/private_key.md';
+
+// 检查文件是否存在
+if (!file_exists($privateKeyFile)) {
+    echo "私钥文件不存在，请在项目根目录下创建 private_key.md 文件并添加您的私钥。\n";
+    exit(1);
+}
+
+// 读取文件内容
+$privateKeyContent = file_get_contents($privateKeyFile);
+
+if ($privateKeyContent === false) {
+    echo "无法读取私钥文件，请检查 private_key.md 文件权限。\n";
+    exit(1);
+}
+
+// 验证内容是否为有效的私钥格式
+$trimmedPrivateKey = trim($privateKeyContent);
+if (strpos($trimmedPrivateKey, '-----BEGIN RSA PRIVATE KEY-----') !== 0 &&
+    strpos($trimmedPrivateKey, '-----BEGIN PRIVATE KEY-----') !== 0) {
+    echo "私钥文件格式不正确，请确保 private_key.md 文件中包含有效的RSA私钥。\n";
+    exit(1);
+}
+
 // 模拟配置参数
 $options = array(
     'appid' => '9a1e9fc2-4626-496e-9136-c1574aa319c6',
-    'signaturePrivateKey' => '-----BEGIN RSA PRIVATE KEY-----
-MIICWwIBAAKBgQC58z+daUsHgAcJr/SGPGdP6AOA2QvjVu3pqVw5D4W0EKtfq6e9
-4Etv86/Y1h99urDBlnM+D1EhrvnW6phrLdVlGDBNUii/Cx/cR3jHOZvy8wtUSOK1
-MClmxQYzOglqkvfCBhdlkG6GoJjbj/teDbkI6W54gxG4YHpGwjcuGd1RRwIDAQAB
-AoGAa8U2RmYDDSq/aXboMnCJs/8VILUqtazpIHZ+s7dyV0Ud/cm/40U+k3jZnsOi
-5ryvutMWoY5BCFOgC1ZV1jBvLzTzSUwdXrzakXO+rq6+HsqYktJWLl2kzHIaf5hn
-+T88ffbzjgnVDagXULrUdNPIorKwIs9cyJAzAUMZdYv+cgkCQQDy6rLPrix8tqUj
-y93lMceDGTbeyRYCTsMZKvWUqASj/CuWVNSZqHASRALA6t1YtTCY0mOoseuPZUrd
-Oictg9xdAkEAw/caTuMuzFP4I8oC4mlPY7zHk4Q4rH6v1mDoXgPYNNYekmtrg8Ol
-HdECgCjiFTroB7E6T06GvF3WtcHhZIVp8wJAFYUxXjDCBDJyIt+2ws1MLZMYR1ht
-OLsdkac6pnbUImr+uYy+YPaJJzUbQVgNUASNT5yj85f/lG6W2U6DlgauiQJAFo+H
-NtfO1nVAVxZ1uI05N5lPPLt3Ltyy77JebhxxMrwH7wFw8k1+3+zlJc4PITST6/bK
-aMD4oA0JoAk/Iqx9YwJADC8gCb6bph6wym+6BXO1oMszKeyHr7XHE0b2KsGjmIY3
-4QzIBGmKGU8HezpjHt4kvcNB0DkwiVSFbKqr0grBOA==
------END RSA PRIVATE KEY-----',
+    'signaturePrivateKey' => $trimmedPrivateKey,
     'webhookVerifyPublicKey' => '-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwJwg82VdH+/r+f+0
 w0rEkLmT6y9d5LkYxqkKlQvQ1q4gF5fCvzW+HmMf8C0kVQH9X5sZsJ7HhYUZ
