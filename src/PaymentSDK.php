@@ -356,7 +356,7 @@ class PaymentSDK
             if (isset($response['data']) && isset($response['data']['payment_link']) && !empty($response['data']['payment_link'])) {
                 // 验证成功，返回 business 数据和 true
                 return [
-                    'business' => isset($response['business']) ? $response['business'] : null,
+                    'business' => isset($response['data']['order']['business']) ? $response['data']['order']['business']: null,
                     'success' => true
                 ];
             }
