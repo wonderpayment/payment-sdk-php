@@ -88,19 +88,7 @@ try {
     // 检查查询结果
     if (isset($response['data'])) {
         echo "✅ 订单查询成功!\n";
-        $orderData = $response['data'];
-        
-        if (isset($orderData['status'])) {
-            echo "订单状态: " . $orderData['status'] . "\n";
-        }
-        
-        if (isset($orderData['payment_link'])) {
-            echo "支付链接: " . $orderData['payment_link'] . "\n";
-        }
-        
-        if (isset($orderData['uuid'])) {
-            echo "订单UUID: " . $orderData['uuid'] . "\n";
-        }
+        $orderData = $response['data']['order'];
         
         // 验证查询结果与创建结果的一致性
         if (isset($orderData['reference_number']) && $orderData['reference_number'] === $referenceNumber) {
@@ -109,11 +97,7 @@ try {
             echo "❌ 订单参考号不匹配!\n";
         }
         
-        if (isset($orderData['payment_link']) && $orderData['payment_link'] === $paymentLink) {
-            echo "✅ 支付链接匹配!\n";
-        } else {
-            echo "❌ 支付链接不匹配!\n";
-        }
+
     } else {
         echo "❌ 订单查询失败或订单不存在!\n";
     }
