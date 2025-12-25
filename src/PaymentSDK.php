@@ -11,7 +11,7 @@ class PaymentSDK
      * 'webhookVerifyPublicKey' = > '',
      * 'callback_url' => '',
      * 'redirect_url' => '',
-     * 'apiEndpoint' => '' // 新增API端点配置，默认为测试环境
+     * 'environment' => 'stg' // 环境配置：'stg' 或 'prod'，默认为 'stg'
      * )
      */
     private $options;
@@ -170,7 +170,8 @@ class PaymentSDK
 
     private function _request($method, $uri, $queryParams = array(), $body = array()) {
         // 构建完整URL
-        $apiEndpoint = isset($this->options['apiEndpoint']) ? $this->options['apiEndpoint'] : 'https://gateway-stg.wonder.today';
+        $environment = isset($this->options['environment']) ? $this->options['environment'] : 'stg';
+        $apiEndpoint = ($environment === 'prod') ? 'https://gateway.wonder.today' : 'https://gateway-stg.wonder.today';
         $fullUrl = $apiEndpoint . $uri;
 
         // 如果有查询参数，添加到URL
