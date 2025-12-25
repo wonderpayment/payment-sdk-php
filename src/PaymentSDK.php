@@ -69,7 +69,19 @@ class PaymentSDK
 
     public function voidOrder($params) {}
 
-    public function queryOrder($params) {}
+    public function queryOrder($params) {
+        if(!is_array($params)) {
+            throw new \Exception('Parameters must be an array');
+        }
+        $order = $params['order'];
+        if(!is_array($order)) {
+            throw new \Exception('order must be an array');
+        }
+        if(empty($order['reference_number'])) {
+            throw new \Exception('Order reference number must be provided');
+        }
+        return $this->_request("POST","/svc/payment/api/v1/openapi/orders/check", null, $params);
+    }
 
 
     private function _request($method, $uri, $queryParams = array(), $body = array()) {
