@@ -63,11 +63,95 @@ class PaymentSDK
 
     }
 
-    public function voidTransaction($params) {}
+    public function voidTransaction($params) {
+        if(!is_array($params)) {
+            throw new \Exception('Parameters must be an array');
+        }
+        
+        $order = isset($params['order']) ? $params['order'] : null;
+        $transaction = isset($params['transaction']) ? $params['transaction'] : null;
+        
+        if(!is_array($order)) {
+            throw new \Exception('order must be an array');
+        }
+        
+        if(!is_array($transaction)) {
+            throw new \Exception('transaction must be an array');
+        }
+        
+        if(empty($order['reference_number']) && empty($order['number'])) {
+            throw new \Exception('Order reference number or number must be provided');
+        }
+        
+        if(empty($transaction['uuid'])) {
+            throw new \Exception('Transaction UUID must be provided');
+        }
+        
+        return $this->_request("POST", "/svc/payment/api/v1/openapi/orders/void", null, $params);
+    }
 
-    public function refundTransaction($params) {}
+    public function refundTransaction($params) {
+        if(!is_array($params)) {
+            throw new \Exception('Parameters must be an array');
+        }
+        
+        $order = isset($params['order']) ? $params['order'] : null;
+        $transaction = isset($params['transaction']) ? $params['transaction'] : null;
+        $refund = isset($params['refund']) ? $params['refund'] : null;
+        
+        if(!is_array($order)) {
+            throw new \Exception('order must be an array');
+        }
+        
+        if(!is_array($transaction)) {
+            throw new \Exception('transaction must be an array');
+        }
+        
+        if(!is_array($refund)) {
+            throw new \Exception('refund must be an array');
+        }
+        
+        if(empty($order['reference_number']) && empty($order['number'])) {
+            throw new \Exception('Order reference number or number must be provided');
+        }
+        
+        if(empty($transaction['uuid'])) {
+            throw new \Exception('Transaction UUID must be provided');
+        }
+        
+        if(empty($refund['amount'])) {
+            throw new \Exception('Refund amount must be provided');
+        }
+        
+        return $this->_request("POST", "/svc/payment/api/v1/openapi/orders/refund", null, $params);
+    }
 
-    public function voidOrder($params) {}
+    public function voidOrder($params) {
+        if(!is_array($params)) {
+            throw new \Exception('Parameters must be an array');
+        }
+        
+        $order = isset($params['order']) ? $params['order'] : null;
+        $transaction = isset($params['transaction']) ? $params['transaction'] : null;
+        
+        if(!is_array($order)) {
+            throw new \Exception('order must be an array');
+        }
+        
+        if(!is_array($transaction)) {
+            throw new \Exception('transaction must be an array');
+        }
+        
+        if(empty($order['reference_number']) && empty($order['number'])) {
+            throw new \Exception('Order reference number or number must be provided');
+        }
+        
+        if(empty($transaction['uuid'])) {
+            throw new \Exception('Transaction UUID must be provided');
+        }
+        
+        return $this->_request("POST", "/svc/payment/api/v1/openapi/orders/void", null, $params);
+    }
 
     public function queryOrder($params) {
         if(!is_array($params)) {
