@@ -336,7 +336,7 @@ class PaymentSDK
      * 调用创建接口如果返回有支付链接，这个函数返回true
      *
      * @param array $params 订单参数
-     * @return bool 验证结果
+     * @return array|bool
      */
     public function verifySignature()
     {
@@ -353,12 +353,23 @@ class PaymentSDK
             $response = $this->createPaymentLink($params);
             // 检查响应中是否包含支付链接
             if (isset($response['data']) && isset($response['data']['payment_link']) && !empty($response['data']['payment_link'])) {
-                return true;
+                // 验证成功，返回 business 数据和 true
+                return [
+                    'business' => isset($response['business']) ? $response['business'] : null,
+                    'success' => true
+                ];
             }
-            return false;
+            // 验证失败，返回空值和 false
+            return [
+                'business' => null,
+                'success' => false
+            ];
         } catch (Exception $e) {
-            // 如果创建支付链接时发生异常，返回false
-            return false;
+            // 如果创建支付链接时发生异常，返回空值和 false
+            return [
+                'business' => null,
+                'success' => false
+            ];
         }
     }
 
