@@ -87,6 +87,21 @@ class PaymentSDK
             throw new \Exception('Transaction UUID must be provided');
         }
         
+        // 检查是否可以void
+        $orderResponse = $this->queryOrder($params);
+        if(isset($orderResponse['data']['transactions']) && is_array($orderResponse['data']['transactions'])) {
+            $allowedVoid = false;
+            foreach($orderResponse['data']['transactions'] as $t) {
+                if(isset($t['allowed_void']) && $t['allowed_void'] === true) {
+                    $allowedVoid = true;
+                    break;
+                }
+            }
+            if(!$allowedVoid) {
+                throw new \Exception('Transaction cannot be voided');
+            }
+        }
+        
         return $this->_request("POST", "/svc/payment/api/v1/openapi/orders/void", null, $params);
     }
 
@@ -138,16 +153,13 @@ class PaymentSDK
             throw new \Exception('order must be an array');
         }
         
-        if(!is_array($transaction)) {
-            throw new \Exception('transaction must be an array');
-        }
-        
-        if(empty($order['reference_number']) && empty($order['number'])) {
-            throw new \Exception('Order reference number or number must be provided');
-        }
-        
-        if(empty($transaction['uuid'])) {
-            throw new \Exception('Transaction UUID must be provided');
+        // 检查支付状态
+        $orderResponse = $this->queryOrder($params);
+        if(isset($orderResponse['data']['order']['correspondence_state'])) {
+            $correspondenceState = $orderResponse['data']['order']['correspondence_state'];
+            if($correspondenceState !== 'unpaid') {
+                throw new \Exception('Order cannot be voided. Current state: ' . $correspondenceState);
+            }
         }
         
         return $this->_request("POST", "/svc/payment/api/v1/openapi/orders/void", null, $params);
