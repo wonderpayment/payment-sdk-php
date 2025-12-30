@@ -12,12 +12,14 @@ class PaymentSDK
      * 'callback_url' => '',
      * 'redirect_url' => '',
      * 'environment' => 'stg' // 环境配置：'stg' 或 'prod'，默认为 'stg'
+     * 'request_id' => '' // 可选：请求ID，用于追踪请求，如果不提供则自动生成
      * )
      */
     private $options;
     private $appId;
     private $privateKey;
     private $publicKey;
+    private $requestId;
 
     public function __construct($options) {
         $this->options = $options;
@@ -31,6 +33,9 @@ class PaymentSDK
         $this->appId = $options['appid'];
         $this->privateKey = $options['signaturePrivateKey'];
         $this->publicKey = $options['webhookVerifyPublicKey'];
+
+        // 设置 request_id，如果未提供则生成一个默认值
+        $this->requestId = isset($options['request_id']) ? $options['request_id'] : $this->generateRequestId();
     }
 
     public function verify() {
@@ -450,9 +455,18 @@ class PaymentSDK
             );
         }
 
-        $headers[] = 'X-Request-ID: ' . $this->appId; // 添加X-Request-ID头
+        $headers[] = 'X-Request-ID: ' . $this->requestId; // 添加X-Request-ID头，使用传入的request_id
         return $headers;
     }
+    /**
+     * 生成默认的 request_id
+     *
+     * @return string 生成的 request_id
+     */
+    private function generateRequestId() {
+        return uniqid('req_', true);
+    }
+
     /**
      * generateAuthHeaders已实现_signature
      * */
