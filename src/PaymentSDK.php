@@ -697,11 +697,11 @@ class PaymentSDK
         // 1. 生成 UUID
         $uuidResponse = $this->generateQRCodeUUID();
 
-        if (!isset($uuidResponse['data']['uuid'])) {
+        if (!isset($uuidResponse['data']['id'])) {
             throw new \Exception('Failed to generate UUID');
         }
 
-        $uuid = $uuidResponse['data']['uuid'];
+        $uuid = $uuidResponse['data']['id'];
 
         // 2. 创建短链
         $shortLinkResponse = $this->createQRCodeShortLink($uuid);
@@ -752,6 +752,19 @@ class PaymentSDK
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $error = curl_error($ch);
 
+        // 添加详细的错误日志
+        error_log('QR Code Request - URL: ' . $url);
+        error_log('QR Code Request - Method: ' . $method);
+        error_log('QR Code Request - Headers: ' . print_r($headers, true));
+        if ($body !== null) {
+            error_log('QR Code Request - Body: ' . $body);
+        }
+        error_log('QR Code Request - HTTP Code: ' . $httpCode);
+        error_log('QR Code Request - Response: ' . $response);
+        if ($error) {
+            error_log('QR Code Request - cURL Error: ' . $error);
+        }
+
         if ($error) {
             curl_close($ch);
             throw new \Exception('cURL error: ' . $error);
@@ -797,5 +810,31 @@ class PaymentSDK
         $data[8] = chr(ord($data[8]) & 0x3f | 0x80); // variant
 
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+    }
+
+    /**
+     * 获取店铺列表
+     *
+     * @return array 返回店铺列表
+     * @throws \Exception
+     */
+    public function getBusinesses()
+    {
+        if (empty($this->userAccessToken)) {
+            throw new \Exception('User Access Token is required for getting business list');
+        }
+
+        $url = $this->getQRCodeGatewayBaseUrl() . '/api/galaxy/associates/businesses';
+        $requestId = $this->generateUUIDv4();
+
+        $headers = [
+            'X-Request-Id: ' . $requestId,
+            'X-USER-ACCESS-TOKEN: ' . $this->userAccessToken,
+            'x-request-id: ' . $requestId,
+            'Accept: application/json',
+            'Connection: keep-alive'
+        ];
+
+        return $this->makeQRCodeRequest('GET', $url, $headers, null);
     }
 }
