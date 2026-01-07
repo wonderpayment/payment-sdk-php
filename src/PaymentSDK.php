@@ -4,6 +4,12 @@
 
 class PaymentSDK
 {
+    // 扫码登录常量
+    private $qrCodeClientId;
+    private $qrCodeAppKey;
+    private $qrCodeAppSlug;
+    private $qrCodeLinkClientId;
+
     /**
      * array(
      * 'appid' => '',
@@ -13,6 +19,9 @@ class PaymentSDK
      * 'redirect_url' => '',
      * 'environment' => 'stg' // 环境配置：'stg' 或 'prod'，默认为 'stg'
      * 'request_id' => '' // 可选：请求ID，用于追踪请求，如果不提供则自动生成
+     * 'jwtToken' => '' // 扫码登录 JWT Token（可选）
+     * 'userAccessToken' => '' // 扫码登录用户访问令牌（可选）
+     * 'language' => 'en-US' // 语言（可选，默认 en-US）
      * )
      */
     private $options;
@@ -20,6 +29,9 @@ class PaymentSDK
     private $privateKey;
     private $publicKey;
     private $requestId;
+    private $jwtToken;
+    private $userAccessToken;
+    private $language;
 
     public function __construct($options) {
         $this->options = $options;
@@ -36,6 +48,37 @@ class PaymentSDK
 
         // 设置 request_id，如果未提供则生成一个默认值
         $this->requestId = isset($options['request_id']) ? $options['request_id'] : $this->generateRequestId();
+
+        // 初始化扫码登录相关属性
+        $this->jwtToken = isset($options['jwtToken']) ? $options['jwtToken'] : '';
+        $this->userAccessToken = isset($options['userAccessToken']) ? $options['userAccessToken'] : '';
+        $this->language = isset($options['language']) ? $options['language'] : 'en-US';
+
+        // 初始化扫码登录常量，根据环境动态设置
+        $environment = isset($options['environment']) ? $options['environment'] : 'stg';
+        $this->initQRCodeConstants($environment);
+    }
+
+    /**
+     * 初始化扫码登录常量
+     *
+     * @param string $environment 环境（'stg' 或 'prod'）
+     */
+    private function initQRCodeConstants($environment)
+    {
+        if ($environment === 'prod') {
+            // 生产环境配置（待定）
+            $this->qrCodeClientId = ''; // 待定
+            $this->qrCodeAppKey = ''; // 待定
+            $this->qrCodeAppSlug = ''; // 待定
+            $this->qrCodeLinkClientId = ''; // 待定
+        } else {
+            // 测试环境配置
+            $this->qrCodeClientId = 'c4a2b6cf-983a-4117-b75f-bbeac3897c0f';
+            $this->qrCodeAppKey = '02eb3362-1ccb-4063-8f5e-825fde761efb';
+            $this->qrCodeAppSlug = '3Kswi8';
+            $this->qrCodeLinkClientId = '3b95c5102ac5973893fdb3b64bce4206';
+        }
     }
 
     public function verify() {
@@ -72,26 +115,26 @@ class PaymentSDK
         if(!is_array($params)) {
             throw new \Exception('Parameters must be an array');
         }
-        
+
         $order = isset($params['order']) ? $params['order'] : null;
         $transaction = isset($params['transaction']) ? $params['transaction'] : null;
-        
+
         if(!is_array($order)) {
             throw new \Exception('order must be an array');
         }
-        
+
         if(!is_array($transaction)) {
             throw new \Exception('transaction must be an array');
         }
-        
+
         if(empty($order['reference_number']) && empty($order['number'])) {
             throw new \Exception('Order reference number or number must be provided');
         }
-        
+
         if(empty($transaction['uuid'])) {
             throw new \Exception('Transaction UUID must be provided');
         }
-        
+
         // 检查是否可以void
         $orderResponse = $this->queryOrder($params);
         if(isset($orderResponse['data']['transactions']) && is_array($orderResponse['data']['transactions'])) {
@@ -106,7 +149,7 @@ class PaymentSDK
                 throw new \Exception('Transaction cannot be voided');
             }
         }
-        
+
         return $this->_request("POST", "/svc/payment/api/v1/openapi/orders/void", null, $params);
     }
 
@@ -114,35 +157,35 @@ class PaymentSDK
         if(!is_array($params)) {
             throw new \Exception('Parameters must be an array');
         }
-        
+
         $order = isset($params['order']) ? $params['order'] : null;
         $transaction = isset($params['transaction']) ? $params['transaction'] : null;
         $refund = isset($params['refund']) ? $params['refund'] : null;
-        
+
         if(!is_array($order)) {
             throw new \Exception('order must be an array');
         }
-        
+
         if(!is_array($transaction)) {
             throw new \Exception('transaction must be an array');
         }
-        
+
         if(!is_array($refund)) {
             throw new \Exception('refund must be an array');
         }
-        
+
         if(empty($order['reference_number']) && empty($order['number'])) {
             throw new \Exception('Order reference number or number must be provided');
         }
-        
+
         if(empty($transaction['uuid'])) {
             throw new \Exception('Transaction UUID must be provided');
         }
-        
+
         if(empty($refund['amount'])) {
             throw new \Exception('Refund amount must be provided');
         }
-        
+
         return $this->_request("POST", "/svc/payment/api/v1/openapi/orders/refund", null, $params);
     }
 
@@ -150,14 +193,14 @@ class PaymentSDK
         if(!is_array($params)) {
             throw new \Exception('Parameters must be an array');
         }
-        
+
         $order = isset($params['order']) ? $params['order'] : null;
         $transaction = isset($params['transaction']) ? $params['transaction'] : null;
-        
+
         if(!is_array($order)) {
             throw new \Exception('order must be an array');
         }
-        
+
         // 检查支付状态
         $orderResponse = $this->queryOrder($params);
         if(isset($orderResponse['data']['order']['correspondence_state'])) {
@@ -166,7 +209,7 @@ class PaymentSDK
                 throw new \Exception('Order cannot be voided. Current state: ' . $correspondenceState);
             }
         }
-        
+
         return $this->_request("POST", "/svc/payment/api/v1/openapi/orders/void", null, $params);
     }
 
@@ -511,5 +554,248 @@ class PaymentSDK
             'private_key' => $privateKey,
             'public_key' => $publicKey
         );
+    }
+
+    // ==================== 扫码登录相关方法 ====================
+
+    /**
+     * 获取扫码登录的基础 URL
+     *
+     * @return string
+     */
+    private function getQRCodeBaseUrl()
+    {
+        $environment = isset($this->options['environment']) ? $this->options['environment'] : 'stg';
+        return ($environment === 'prod')
+            ? 'https://main.bindo.co'
+            : 'https://main-stg.bindo.co';
+    }
+
+    /**
+     * 获取扫码登录的网关基础 URL
+     *
+     * @return string
+     */
+    private function getQRCodeGatewayBaseUrl()
+    {
+        $environment = isset($this->options['environment']) ? $this->options['environment'] : 'stg';
+        return ($environment === 'prod')
+            ? 'https://gateway.wonder.app'
+            : 'https://gateway-stg.wonder.app';
+    }
+
+    /**
+     * 生成 UUID
+     * 用于扫码登录流程
+     *
+     * @return array 返回包含 UUID 的响应
+     * @throws \Exception
+     */
+    public function generateQRCodeUUID()
+    {
+        $url = $this->getQRCodeBaseUrl() . '/user/b2c/qr_code';
+        $requestId = $this->generateUUIDv4();
+
+        $headers = [
+            'X-Request-Id: ' . $requestId,
+            'x-client-id: ' . $this->qrCodeClientId,
+            'x-i18n-lang: ' . $this->language,
+            'x-app-key: ' . $this->qrCodeAppKey,
+            'x-app-slug: ' . $this->qrCodeAppSlug,
+            'x-internal: TRUE',
+            'Accept: application/json',
+            'Content-Length: 0'
+        ];
+
+        return $this->makeQRCodeRequest('POST', $url, $headers, null);
+    }
+
+    /**
+     * 创建二维码短链
+     *
+     * @param string $uuid 从 generateQRCodeUUID() 获取的 UUID
+     * @return array 返回包含短链信息的响应
+     * @throws \Exception
+     */
+    public function createQRCodeShortLink($uuid)
+    {
+        if (empty($uuid)) {
+            throw new \Exception('UUID is required');
+        }
+
+        if (empty($this->jwtToken)) {
+            throw new \Exception('JWT Token is required for creating QR code short link');
+        }
+
+        $url = $this->getQRCodeGatewayBaseUrl() . '/api/short-chain/qrcode-links';
+        $requestId = $this->generateUUIDv4();
+
+        $headers = [
+            'authorization: Bearer ' . $this->jwtToken,
+            'x-app-key: ' . $this->qrCodeAppKey,
+            'x-app-slug: ' . $this->qrCodeAppSlug,
+            'x-client-id: ' . $this->qrCodeLinkClientId,
+            'x-i18n-lang: ' . $this->language,
+            'x-request-id: ' . $requestId,
+            'Content-Type: application/json',
+            'Accept: application/json, text/plain, */*'
+        ];
+
+        // 添加用户访问令牌（如果有）
+        if (!empty($this->userAccessToken)) {
+            $headers[] = 'x-user-access-token: ' . $this->userAccessToken;
+        }
+
+        $body = [
+            'type' => 'Normal',
+            'link_type' => 'Scan Code Login',
+            'data' => [
+                'uuid' => $uuid,
+                'client_id' => $this->qrCodeLinkClientId
+            ]
+        ];
+
+        return $this->makeQRCodeRequest('POST', $url, $headers, json_encode($body));
+    }
+
+    /**
+     * 获取二维码状态（单次查询，不轮询）
+     * 前端需要自行轮询此接口
+     *
+     * @param string $uuid 二维码的 UUID
+     * @return array 返回状态信息
+     * @throws \Exception
+     */
+    public function getQRCodeStatus($uuid)
+    {
+        if (empty($uuid)) {
+            throw new \Exception('UUID is required');
+        }
+
+        $url = $this->getQRCodeBaseUrl() . '/user/b2c/qr_code/info?id=' . urlencode($uuid);
+        $requestId = $this->generateUUIDv4();
+
+        $headers = [
+            'x-client-id: ' . $this->qrCodeClientId,
+            'x-i18n-lang: ' . $this->language,
+            'x-request-id: ' . $requestId,
+            'Accept: application/json'
+        ];
+
+        return $this->makeQRCodeRequest('GET', $url, $headers, null);
+    }
+
+    /**
+     * 创建二维码（完整流程）
+     * 一次性完成 UUID 生成和短链创建
+     *
+     * @return array 返回包含二维码短链和 UUID 的信息
+     * @throws \Exception
+     */
+    public function createQRCode()
+    {
+        // 1. 生成 UUID
+        $uuidResponse = $this->generateQRCodeUUID();
+
+        if (!isset($uuidResponse['data']['uuid'])) {
+            throw new \Exception('Failed to generate UUID');
+        }
+
+        $uuid = $uuidResponse['data']['uuid'];
+
+        // 2. 创建短链
+        $shortLinkResponse = $this->createQRCodeShortLink($uuid);
+
+        if (!isset($shortLinkResponse['data']['shortChain'])) {
+            throw new \Exception('Failed to create QR code short link');
+        }
+
+        $shortChain = $shortLinkResponse['data']['shortChain'];
+
+        return [
+            'uuid' => $uuid,
+            'sUrl' => $shortChain['sUrl'],
+            'lUrl' => $shortChain['lUrl'],
+            'short' => $shortChain['short'],
+            'expiresAt' => $shortChain['expires_at'],
+            'environment' => $shortLinkResponse['data']['env']
+        ];
+    }
+
+    /**
+     * 发起扫码登录相关的 HTTP 请求
+     *
+     * @param string $method HTTP 方法
+     * @param string $url 请求 URL
+     * @param array $headers 请求头
+     * @param string $body 请求体
+     * @return array 返回响应数据
+     * @throws \Exception
+     */
+    private function makeQRCodeRequest($method, $url, $headers, $body = null)
+    {
+        $ch = curl_init();
+
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+
+        if ($body !== null) {
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+        }
+
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+
+        if ($error) {
+            curl_close($ch);
+            throw new \Exception('cURL error: ' . $error);
+        }
+
+        curl_close($ch);
+
+        $responseData = json_decode($response, true);
+
+        if ($httpCode >= 400) {
+            throw new \Exception('API request failed, HTTP status: ' . $httpCode . ', Response: ' . $response);
+        }
+
+        if ($responseData === null) {
+            throw new \Exception('Failed to parse API response: ' . $response);
+        }
+
+        return $responseData;
+    }
+
+    /**
+     * 生成 UUID v4
+     * 兼容 PHP 5.6+
+     *
+     * @return string
+     */
+    private function generateUUIDv4()
+    {
+        // 兼容 PHP 5.6+ 的随机字节生成方式
+        if (function_exists('random_bytes')) {
+            $data = random_bytes(16);
+        } else if (function_exists('openssl_random_pseudo_bytes')) {
+            $data = openssl_random_pseudo_bytes(16);
+        } else {
+            // 兜底方案：使用 mt_rand
+            $data = '';
+            for ($i = 0; $i < 16; $i++) {
+                $data .= chr(mt_rand(0, 255));
+            }
+        }
+
+        $data[6] = chr(ord($data[6]) & 0x0f | 0x40); // version 4
+        $data[8] = chr(ord($data[8]) & 0x3f | 0x80); // variant
+
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
     }
 }
