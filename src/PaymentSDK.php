@@ -267,6 +267,10 @@ class PaymentSDK
             curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
         }
 
+        // 设置超时时间
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);  // 连接超时5秒
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);        // 总超时30秒
+
         // 执行请求
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -748,22 +752,13 @@ class PaymentSDK
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
 
+        // 设置超时时间
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);  // 连接超时5秒
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);        // 总超时30秒
+
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $error = curl_error($ch);
-
-        // 添加详细的错误日志
-        error_log('QR Code Request - URL: ' . $url);
-        error_log('QR Code Request - Method: ' . $method);
-        error_log('QR Code Request - Headers: ' . print_r($headers, true));
-        if ($body !== null) {
-            error_log('QR Code Request - Body: ' . $body);
-        }
-        error_log('QR Code Request - HTTP Code: ' . $httpCode);
-        error_log('QR Code Request - Response: ' . $response);
-        if ($error) {
-            error_log('QR Code Request - cURL Error: ' . $error);
-        }
 
         if ($error) {
             curl_close($ch);
@@ -773,6 +768,11 @@ class PaymentSDK
         curl_close($ch);
 
         $responseData = json_decode($response, true);
+
+        // 检查 API 返回的错误
+        if (isset($responseData['code']) && $responseData['code'] != 200) {
+            throw new \Exception('API error: ' . ($responseData['error_message'] ? $responseData['message'] : 'Unknown error'));
+        }
 
         if ($httpCode >= 400) {
             throw new \Exception('API request failed, HTTP status: ' . $httpCode . ', Response: ' . $response);
@@ -836,5 +836,65 @@ class PaymentSDK
         ];
 
         return $this->makeQRCodeRequest('GET', $url, $headers, null);
+    }
+
+    /**
+     * 生成密钥对并获取 App ID
+     *
+     * 该方法会:
+     * 1. 接收前端生成的 2048 位公钥
+     * 2. 上传公钥到服务器
+     * 3. 服务器生成密钥对并返回 app_id
+     *
+     * @param string $businessId 业务 ID
+     * @param string $publicKey 2048 位的公钥
+     * @return array 返回 app_id 和相关信息
+     * @throws \Exception
+     */
+    public function generateAppId($businessId, $publicKey)
+    {
+        if (empty($this->userAccessToken)) {
+            throw new \Exception('User Access Token is required for generating app_id');
+        }
+
+        if (empty($businessId)) {
+            throw new \Exception('Business ID is required');
+        }
+
+        if (empty($publicKey)) {
+            throw new \Exception('Public Key is required');
+        }
+
+        // URL 格式: https://main-stg.bindo.co/svc/user/api/v1/{business_id}/app
+        $environment = isset($this->options['environment']) ? $this->options['environment'] : 'stg';
+        $baseUrl = ($environment === 'prod')
+            ? 'https://main.bindo.co'
+            : 'https://main-stg.bindo.co';
+
+        $url = $baseUrl . '/svc/user/api/v1/' . $businessId . '/app';
+        $requestId = $this->generateUUIDv4();
+
+        $headers = [
+            'X-Request-Id: ' . $requestId,
+            'x-app-key: ' . $this->qrCodeAppKey,
+            'x-app-slug: ' . $this->qrCodeAppSlug,
+            'x-client-id: ' . $this->qrCodeLinkClientId,
+            'x-i18n-lang: ' . $this->language,
+            'x-internal: TRUE',
+            'x-p-business-id: ' . $businessId,
+            'X-USER-ACCESS-TOKEN: ' . $this->userAccessToken,
+            'x-request-id: ' . $requestId,
+            'Accept: application/json',
+            'Content-Type: application/json'
+        ];
+        // 将 PEM 格式的公钥转换为 Base64 格式
+        // API 期望的是整个 PEM 文件(包括头尾)的 Base64 编码
+        $publicKeyBase64 = base64_encode($publicKey);
+
+        // 请求体包含公钥 - 参数名必须是 signature_public_key,值必须是 Base64 格式
+        $body = json_encode([
+            'signature_public_key' => $publicKeyBase64
+        ]);
+        return $this->makeQRCodeRequest('POST', $url, $headers, $body);
     }
 }
