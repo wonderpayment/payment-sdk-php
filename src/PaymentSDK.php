@@ -245,8 +245,7 @@ class PaymentSDK
             $uri,
             json_encode($body),
             null,
-            null,
-            isset($this->options['skipSignature']) ? $this->options['skipSignature'] : false
+            null
         );
 
         // 添加Content-Type头
@@ -464,11 +463,10 @@ class PaymentSDK
      * @param string $body 请求体
      * @param string $requestTime 请求时间 (格式: yyyymmddHHMMSS)
      * @param string $nonce 随机数 (16位随机字符)
-     * @param bool $skipSignature 是否跳过验签
      * @return array 包含认证信息的请求头
      * @throws Exception
      */
-    public function generateAuthHeaders($method, $uri, $body = null, $requestTime = null, $nonce = null, $skipSignature = false)
+    public function generateAuthHeaders($method, $uri, $body = null, $requestTime = null, $nonce = null)
     {
         if ($requestTime === null) {
             // 使用UTC时间，格式为 yyyymmddHHMMSS
@@ -481,26 +479,13 @@ class PaymentSDK
 
         $credential = $this->appId . '/' . $requestTime . '/Wonder-RSA-SHA256';
 
-        // 如果跳过验签，生成一个模拟签名或使用简单签名
-        if ($skipSignature) {
-            // 在跳过验签的测试环境中，生成一个模拟签名
-            $signatureMessage = $this->generateSignatureMessage($credential, $nonce, $method, $uri, $body);
-            $signature = base64_encode(hash('sha256', $signatureMessage, true));
-            $headers = array(
-                'Credential: ' . $credential,
-                'Nonce: ' . $nonce,
-                'Signature: ' . $signature
-            );
-            $headers[] = 'X-Skip-Signature: True'; // 添加跳过验签头
-        } else {
-            // 正常签名流程
-            $signature = $this->signRequest($credential, $nonce, $method, $uri, $body);
-            $headers = array(
-                'Credential: ' . $credential,
-                'Nonce: ' . $nonce,
-                'Signature: ' . $signature
-            );
-        }
+        // 正常签名流程
+        $signature = $this->signRequest($credential, $nonce, $method, $uri, $body);
+        $headers = array(
+            'Credential: ' . $credential,
+            'Nonce: ' . $nonce,
+            'Signature: ' . $signature
+        );
 
         $headers[] = 'X-Request-ID: ' . $this->requestId; // 添加X-Request-ID头，使用传入的request_id
         return $headers;
