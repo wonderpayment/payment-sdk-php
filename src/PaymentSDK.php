@@ -4,7 +4,7 @@
 
 class PaymentSDK
 {
-    // 扫码登录常量
+    // QR code login constants
     private $qrCodeClientId;
     private $qrCodeAppKey;
     private $qrCodeAppSlug;
@@ -17,11 +17,11 @@ class PaymentSDK
      * 'webhookVerifyPublicKey' = > '',
      * 'callback_url' => '',
      * 'redirect_url' => '',
-     * 'environment' => 'stg' // 环境配置：'stg' 或 'prod'，默认为 'stg'
-     * 'request_id' => '' // 可选：请求ID，用于追踪请求，如果不提供则自动生成
-     * 'jwtToken' => '' // 扫码登录 JWT Token（可选）
-     * 'userAccessToken' => '' // 扫码登录用户访问令牌（可选）
-     * 'language' => 'en-US' // 语言（可选，默认 en-US）
+     * 'environment' => 'stg' // Environment configuration: 'stg' or 'prod', default is 'stg'
+     * 'request_id' => '' // Optional: Request ID for tracking requests, auto-generated if not provided
+     * 'jwtToken' => '' // QR code login JWT Token (optional)
+     * 'userAccessToken' => '' // QR code login user access token (optional)
+     * 'language' => 'en-US' // Language (optional, default en-US)
      * )
      */
     private $options;
@@ -36,44 +36,44 @@ class PaymentSDK
     public function __construct($options) {
         $this->options = $options;
 
-        // 检查必要参数是否存在
+        // Check if required parameters exist
         if (!isset($options['appid']) || !isset($options['signaturePrivateKey']) || !isset($options['webhookVerifyPublicKey'])) {
             throw new \Exception('Missing required options: appid, signaturePrivateKey, or webhookVerifyPublicKey');
         }
 
-        // 直接存储认证信息
+        // Store authentication information directly
         $this->appId = $options['appid'];
         $this->privateKey = $options['signaturePrivateKey'];
         $this->publicKey = $options['webhookVerifyPublicKey'];
 
-        // 设置 request_id，如果未提供则生成一个默认值
+        // Set request_id, generate default value if not provided
         $this->requestId = isset($options['request_id']) ? $options['request_id'] : $this->generateRequestId();
 
-        // 初始化扫码登录相关属性
+        // Initialize QR code login related properties
         $this->jwtToken = isset($options['jwtToken']) ? $options['jwtToken'] : '';
         $this->userAccessToken = isset($options['userAccessToken']) ? $options['userAccessToken'] : '';
         $this->language = isset($options['language']) ? $options['language'] : 'en-US';
 
-        // 初始化扫码登录常量，根据环境动态设置
+        // Initialize QR code login constants based on environment
         $environment = isset($options['environment']) ? $options['environment'] : 'stg';
         $this->initQRCodeConstants($environment);
     }
 
     /**
-     * 初始化扫码登录常量
+     * Initialize QR code login constants
      *
-     * @param string $environment 环境（'stg' 或 'prod'）
+     * @param string $environment Environment ('stg' or 'prod')
      */
     private function initQRCodeConstants($environment)
     {
         if ($environment === 'prod') {
-            // 生产环境配置（待定）
-            $this->qrCodeClientId = ''; // 待定
-            $this->qrCodeAppKey = ''; // 待定
-            $this->qrCodeAppSlug = ''; // 待定
-            $this->qrCodeLinkClientId = ''; // 待定
+            // Production environment configuration (TBD)
+            $this->qrCodeClientId = ''; // TBD
+            $this->qrCodeAppKey = ''; // TBD
+            $this->qrCodeAppSlug = ''; // TBD
+            $this->qrCodeLinkClientId = ''; // TBD
         } else {
-            // 测试环境配置
+            // Test environment configuration
             $this->qrCodeClientId = 'c4a2b6cf-983a-4117-b75f-bbeac3897c0f';
             $this->qrCodeAppKey = '02eb3362-1ccb-4063-8f5e-825fde761efb';
             $this->qrCodeAppSlug = '3Kswi8';
@@ -106,7 +106,7 @@ class PaymentSDK
         $order['redirect_url'] = $this->options['redirect_url'];
         $params['order'] = $order;
 
-        // 调用内部请求方法创建支付链接
+        // Call internal request method to create payment link
         return $this->_request("POST","/svc/payment/api/v1/openapi/orders?with_payment_link=true", null, $params);
 
     }
@@ -135,7 +135,7 @@ class PaymentSDK
             throw new \Exception('Transaction UUID must be provided');
         }
 
-        // 检查是否可以void
+        // Check if transaction can be voided
         $orderResponse = $this->queryOrder($params);
         if(isset($orderResponse['data']['transactions']) && is_array($orderResponse['data']['transactions'])) {
             $allowedVoid = false;
@@ -201,7 +201,7 @@ class PaymentSDK
             throw new \Exception('order must be an array');
         }
 
-        // 检查支付状态
+        // Check payment status
         $orderResponse = $this->queryOrder($params);
         if(isset($orderResponse['data']['order']['correspondence_state'])) {
             $correspondenceState = $orderResponse['data']['order']['correspondence_state'];
@@ -229,17 +229,17 @@ class PaymentSDK
 
 
     private function _request($method, $uri, $queryParams = array(), $body = array()) {
-        // 构建完整URL
+        // Build complete URL
         $environment = isset($this->options['environment']) ? $this->options['environment'] : 'stg';
         $apiEndpoint = ($environment === 'prod') ? 'https://gateway.wonder.today' : 'https://gateway-stg.wonder.today';
         $fullUrl = $apiEndpoint . $uri;
 
-        // 如果有查询参数，添加到URL
+        // Add query parameters to URL if present
         if (!empty($queryParams)) {
             $fullUrl .= '?' . http_build_query($queryParams);
         }
 
-        // 生成认证头
+        // Generate authentication headers
         $headers = $this->generateAuthHeaders(
             $method,
             $uri,
@@ -248,42 +248,42 @@ class PaymentSDK
             null
         );
 
-        // 添加Content-Type头
+        // Add Content-Type header
         $headers[] = 'Content-Type: application/json';
 
-        // 初始化cURL
+        // Initialize cURL
         $ch = curl_init();
 
-        // 设置cURL选项
+        // Set cURL options
         curl_setopt($ch, CURLOPT_URL, $fullUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
 
-        // 如果是POST/PUT请求，添加请求体
+        // Add request body for POST/PUT requests
         if ($method === 'POST' || $method === 'PUT') {
             $jsonData = json_encode($body);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
         }
 
-        // 设置超时时间
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);  // 连接超时5秒
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);        // 总超时30秒
+        // Set timeout
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);  // Connection timeout 5 seconds
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);        // Total timeout 30 seconds
 
-        // 执行请求
+        // Execute request
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $error = curl_error($ch);
 
         if ($error) {
             curl_close($ch);
-            throw new Exception('cURL错误: ' . $error);
+            throw new Exception('cURL error: ' . $error);
         }
 
-        // 关闭cURL句柄
+        // Close cURL handle
         curl_close($ch);
 
-        // 解析响应
+        // Parse response
         $responseData = json_decode($response, true);
 
         if ($httpCode >= 400) {
@@ -298,10 +298,10 @@ class PaymentSDK
 
 
     /**
-     * 生成随机字符串
+     * Generate random string
      *
-     * @param int $length 字符串长度
-     * @return string 随机字符串
+     * @param int $length String length
+     * @return string Random string
      */
     private function generateRandomString($length) {
         $alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -316,12 +316,12 @@ class PaymentSDK
     }
 
     /**
-     * 生成预签名字符串
+     * Generate pre-sign string
      *
-     * @param string $method HTTP方法
-     * @param string $uri 请求URI
-     * @param string $body 请求体
-     * @return string 预签名字符串
+     * @param string $method HTTP method
+     * @param string $uri Request URI
+     * @param string $body Request body
+     * @return string Pre-sign string
      */
     public function generatePreSignString($method, $uri, $body = null) {
         $content = strtoupper($method) . "\n" . $uri;
@@ -334,72 +334,72 @@ class PaymentSDK
     }
 
     /**
-     * 生成签名消息
+     * Generate signature message
      *
-     * @param string $credential 凭据字符串
-     * @param string $nonce 随机数
-     * @param string $method HTTP方法
-     * @param string $uri 请求URI
-     * @param string $body 请求体
-     * @return string 签名消息
+     * @param string $credential Credential string
+     * @param string $nonce Random number
+     * @param string $method HTTP method
+     * @param string $uri Request URI
+     * @param string $body Request body
+     * @return string Signature message
      */
     public function generateSignatureMessage($credential, $nonce, $method, $uri, $body = null) {
-        // 解析凭据
+        // Parse credential
         $parsedCredential = explode('/', $credential);
         $requestTime = $parsedCredential[1];
-        $algorithm = $parsedCredential[2]; // 这里会是 'Wonder-RSA-SHA256'
+        $algorithm = $parsedCredential[2]; // This will be 'Wonder-RSA-SHA256'
 
-        // 第一次HMAC-SHA256: nonce + requestTime
+        // First HMAC-SHA256: nonce + requestTime
         $hmac1 = hash_hmac('sha256', $requestTime, $nonce, true);
 
-        // 第二次HMAC-SHA256: result + algorithm
+        // Second HMAC-SHA256: result + algorithm
         $hmac2 = hash_hmac('sha256', $algorithm, $hmac1, true);
 
-        // 生成预签名字符串
+        // Generate pre-sign string
         $preSignString = $this->generatePreSignString($method, $uri, $body);
 
-        // 第三次HMAC-SHA256: result + preSignString
+        // Third HMAC-SHA256: result + preSignString
         $hmac3 = hash_hmac('sha256', $preSignString, $hmac2, true);
 
-        // 返回十六进制格式
+        // Return hexadecimal format
         return bin2hex($hmac3);
     }
 
     /**
-     * 使用私钥生成签名
+     * Generate signature using private key
      *
-     * @param string $data 待签名数据
-     * @return string 签名后的数据（Base64编码）
+     * @param string $data Data to sign
+     * @return string Signed data (Base64 encoded)
      * @throws Exception
      */
     public function sign($data)
     {
         if (empty($this->privateKey)) {
-            throw new Exception('私钥未设置');
+            throw new Exception('Private key not set');
         }
 
         $privateKeyId = openssl_pkey_get_private($this->privateKey);
         if (!$privateKeyId) {
-            throw new Exception('无法加载私钥');
+            throw new Exception('Unable to load private key');
         }
 
-        // 对HMAC-SHA256的十六进制结果进行SHA256哈希，然后进行RSA签名
-        // 这对应于文档中的RSA_SHA256_PKCS1v15
+        // Perform SHA256 hash on HMAC-SHA256 hexadecimal result, then RSA sign
+        // This corresponds to RSA_SHA256_PKCS1v15 in documentation
         $signature = '';
         $result = openssl_sign($data, $signature, $privateKeyId, OPENSSL_ALGO_SHA256);
 
         if (!$result) {
-            throw new Exception('签名失败');
+            throw new Exception('Signature failed');
         }
 
         return base64_encode($signature);
     }
 
     /**
-     * 使用公钥验证签名
-     * 调用创建接口如果返回有支付链接，这个函数返回true
+     * Verify signature using public key
+     * If the create API returns a payment link, this function returns true
      *
-     * @param array $params 订单参数
+     * @param array $params Order parameters
      * @return array|bool
      */
     public function verifySignature()
@@ -410,26 +410,26 @@ class PaymentSDK
                 'charge_fee' => 100,
                 'due_date' => date('Y-m-d', strtotime('+7 days')),
                 'currency' => 'HKD',
-                'note' => '测试订单'
+                'note' => 'Test order'
             )
         );
         try {
             $response = $this->createPaymentLink($params);
-            // 检查响应中是否包含支付链接
+            // Check if response contains payment link
             if (isset($response['data']) && isset($response['data']['payment_link']) && !empty($response['data']['payment_link'])) {
-                // 验证成功，返回 business 数据和 true
+                // Verification successful, return business data and true
                 return [
                     'business' => isset($response['data']['order']['business']) ? $response['data']['order']['business']: null,
                     'success' => true
                 ];
             }
-            // 验证失败，返回空值和 false
+            // Verification failed, return null and false
             return [
                 'business' => null,
                 'success' => false
             ];
         } catch (Exception $e) {
-            // 如果创建支付链接时发生异常，返回空值和 false
+            // If exception occurs during payment link creation, return null and false
             return [
                 'business' => null,
                 'success' => false
@@ -438,14 +438,14 @@ class PaymentSDK
     }
 
     /**
-     * 完整的签名流程：生成签名消息并签名
+     * Complete signature process: generate signature message and sign
      *
-     * @param string $credential 凭据字符串
-     * @param string $nonce 随机数
-     * @param string $method HTTP方法
-     * @param string $uri 请求URI
-     * @param string $body 请求体
-     * @return string 签名后的数据（Base64编码）
+     * @param string $credential Credential string
+     * @param string $nonce Random number
+     * @param string $method HTTP method
+     * @param string $uri Request URI
+     * @param string $body Request body
+     * @return string Signed data (Base64 encoded)
      * @throws Exception
      */
     public function signRequest($credential, $nonce, $method, $uri, $body = null)
@@ -456,20 +456,20 @@ class PaymentSDK
 
 
     /**
-     * 生成API请求头
+     * Generate API request headers
      *
-     * @param string $method HTTP方法
-     * @param string $uri 请求URI
-     * @param string $body 请求体
-     * @param string $requestTime 请求时间 (格式: yyyymmddHHMMSS)
-     * @param string $nonce 随机数 (16位随机字符)
-     * @return array 包含认证信息的请求头
+     * @param string $method HTTP method
+     * @param string $uri Request URI
+     * @param string $body Request body
+     * @param string $requestTime Request time (format: yyyymmddHHMMSS)
+     * @param string $nonce Random number (16 random characters)
+     * @return array Headers containing authentication information
      * @throws Exception
      */
     public function generateAuthHeaders($method, $uri, $body = null, $requestTime = null, $nonce = null)
     {
         if ($requestTime === null) {
-            // 使用UTC时间，格式为 yyyymmddHHMMSS
+            // Use UTC time, format yyyymmddHHMMSS
             $requestTime = gmdate('YmdHis');
         }
 
@@ -479,7 +479,7 @@ class PaymentSDK
 
         $credential = $this->appId . '/' . $requestTime . '/Wonder-RSA-SHA256';
 
-        // 正常签名流程
+        // Normal signature process
         $signature = $this->signRequest($credential, $nonce, $method, $uri, $body);
         $headers = array(
             'Credential: ' . $credential,
@@ -487,20 +487,20 @@ class PaymentSDK
             'Signature: ' . $signature
         );
 
-        $headers[] = 'X-Request-ID: ' . $this->requestId; // 添加X-Request-ID头，使用传入的request_id
+        $headers[] = 'X-Request-ID: ' . $this->requestId; // Add X-Request-ID header, use the provided request_id
         return $headers;
     }
     /**
-     * 生成默认的 request_id
+     * Generate default request_id
      *
-     * @return string 生成的 request_id
+     * @return string Generated request_id
      */
     private function generateRequestId() {
         return uniqid('req_', true);
     }
 
     /**
-     * generateAuthHeaders已实现_signature
+     * _signature is implemented in generateAuthHeaders
      * */
     private function _signature($method,$uri,$body = '') {
         return array(
@@ -510,10 +510,10 @@ class PaymentSDK
         );
     }
     /**
-     * 生成RSA密钥对
+     * Generate RSA key pair
      *
-     * @param int $keyBits 密钥长度，默认4096
-     * @return array 包含私钥和公钥的数组
+     * @param int $keyBits Key length, default 4096
+     * @return array Array containing private key and public key
      */
     public static function generateKeyPair($keyBits = 4096)
     {
@@ -526,17 +526,17 @@ class PaymentSDK
         $res = openssl_pkey_new($config);
 
         if (!$res) {
-            throw new Exception('无法生成RSA密钥对');
+            throw new Exception('Unable to generate RSA key pair');
         }
 
-        // 提取私钥
+        // Extract private key
         openssl_pkey_export($res, $privateKey);
 
-        // 提取公钥
+        // Extract public key
         $publicKeyDetails = openssl_pkey_get_details($res);
         $publicKey = $publicKeyDetails['key'];
 
-        // 释放资源
+        // Release resources
         openssl_pkey_free($res);
 
         return array(
@@ -545,10 +545,10 @@ class PaymentSDK
         );
     }
 
-    // ==================== 扫码登录相关方法 ====================
+    // ==================== QR Code Login Related Methods ====================
 
     /**
-     * 获取扫码登录的基础 URL
+     * Get base URL for QR code login
      *
      * @return string
      */
@@ -561,7 +561,7 @@ class PaymentSDK
     }
 
     /**
-     * 获取扫码登录的网关基础 URL
+     * Get gateway base URL for QR code login
      *
      * @return string
      */
@@ -574,10 +574,10 @@ class PaymentSDK
     }
 
     /**
-     * 生成 UUID
-     * 用于扫码登录流程
+     * Generate UUID
+     * Used for QR code login flow
      *
-     * @return array 返回包含 UUID 的响应
+     * @return array Response containing UUID
      * @throws \Exception
      */
     public function generateQRCodeUUID()
@@ -600,10 +600,10 @@ class PaymentSDK
     }
 
     /**
-     * 创建二维码短链
+     * Create QR code short link
      *
-     * @param string $uuid 从 generateQRCodeUUID() 获取的 UUID
-     * @return array 返回包含短链信息的响应
+     * @param string $uuid UUID obtained from generateQRCodeUUID()
+     * @return array Response containing short link information
      * @throws \Exception
      */
     public function createQRCodeShortLink($uuid)
@@ -630,7 +630,7 @@ class PaymentSDK
             'Accept: application/json, text/plain, */*'
         ];
 
-        // 添加用户访问令牌（如果有）
+        // Add user access token if present
         if (!empty($this->userAccessToken)) {
             $headers[] = 'x-user-access-token: ' . $this->userAccessToken;
         }
@@ -648,11 +648,11 @@ class PaymentSDK
     }
 
     /**
-     * 获取二维码状态（单次查询，不轮询）
-     * 前端需要自行轮询此接口
+     * Get QR code status (single query, no polling)
+     * Frontend needs to poll this interface itself
      *
-     * @param string $uuid 二维码的 UUID
-     * @return array 返回状态信息
+     * @param string $uuid UUID of the QR code
+     * @return array Status information
      * @throws \Exception
      */
     public function getQRCodeStatus($uuid)
@@ -675,15 +675,15 @@ class PaymentSDK
     }
 
     /**
-     * 创建二维码（完整流程）
-     * 一次性完成 UUID 生成和短链创建
+     * Create QR code (complete flow)
+     * Complete UUID generation and short link creation in one step
      *
-     * @return array 返回包含二维码短链和 UUID 的信息
+     * @return array Information containing QR code short link and UUID
      * @throws \Exception
      */
     public function createQRCode()
     {
-        // 1. 生成 UUID
+        // 1. Generate UUID
         $uuidResponse = $this->generateQRCodeUUID();
 
         if (!isset($uuidResponse['data']['id'])) {
@@ -692,7 +692,7 @@ class PaymentSDK
 
         $uuid = $uuidResponse['data']['id'];
 
-        // 2. 创建短链
+        // 2. Create short link
         $shortLinkResponse = $this->createQRCodeShortLink($uuid);
 
         if (!isset($shortLinkResponse['data']['shortChain'])) {
@@ -712,13 +712,13 @@ class PaymentSDK
     }
 
     /**
-     * 发起扫码登录相关的 HTTP 请求
+     * Make HTTP request for QR code login
      *
-     * @param string $method HTTP 方法
-     * @param string $url 请求 URL
-     * @param array $headers 请求头
-     * @param string $body 请求体
-     * @return array 返回响应数据
+     * @param string $method HTTP method
+     * @param string $url Request URL
+     * @param array $headers Request headers
+     * @param string $body Request body
+     * @return array Response data
      * @throws \Exception
      */
     private function makeQRCodeRequest($method, $url, $headers, $body = null)
@@ -737,9 +737,9 @@ class PaymentSDK
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
 
-        // 设置超时时间
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);  // 连接超时5秒
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);        // 总超时30秒
+        // Set timeout
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);  // Connection timeout 5 seconds
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);        // Total timeout 30 seconds
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -754,7 +754,7 @@ class PaymentSDK
 
         $responseData = json_decode($response, true);
 
-        // 检查 API 返回的错误
+        // Check API returned errors
         if (isset($responseData['code']) && $responseData['code'] != 200) {
             throw new \Exception('API error: ' . ($responseData['error_message'] ? $responseData['message'] : 'Unknown error'));
         }
@@ -771,20 +771,20 @@ class PaymentSDK
     }
 
     /**
-     * 生成 UUID v4
-     * 兼容 PHP 5.6+
+     * Generate UUID v4
+     * Compatible with PHP 5.6+
      *
      * @return string
      */
     private function generateUUIDv4()
     {
-        // 兼容 PHP 5.6+ 的随机字节生成方式
+        // Random byte generation compatible with PHP 5.6+
         if (function_exists('random_bytes')) {
             $data = random_bytes(16);
         } else if (function_exists('openssl_random_pseudo_bytes')) {
             $data = openssl_random_pseudo_bytes(16);
         } else {
-            // 兜底方案：使用 mt_rand
+            // Fallback: use mt_rand
             $data = '';
             for ($i = 0; $i < 16; $i++) {
                 $data .= chr(mt_rand(0, 255));
@@ -798,9 +798,9 @@ class PaymentSDK
     }
 
     /**
-     * 获取店铺列表
+     * Get business list
      *
-     * @return array 返回店铺列表
+     * @return array Business list
      * @throws \Exception
      */
     public function getBusinesses()
@@ -824,16 +824,16 @@ class PaymentSDK
     }
 
     /**
-     * 生成密钥对并获取 App ID
+     * Generate key pair and get App ID
      *
-     * 该方法会:
-     * 1. 接收前端生成的 2048 位公钥
-     * 2. 上传公钥到服务器
-     * 3. 服务器生成密钥对并返回 app_id
+     * This method will:
+     * 1. Receive the 2048-bit public key generated by the frontend
+     * 2. Upload the public key to the server
+     * 3. Server generates key pair and returns app_id
      *
-     * @param string $businessId 业务 ID
-     * @param string $publicKey 2048 位的公钥
-     * @return array 返回 app_id 和相关信息
+     * @param string $businessId Business ID
+     * @param string $publicKey 2048-bit public key
+     * @return array app_id and related information
      * @throws \Exception
      */
     public function generateAppId($businessId, $publicKey)
@@ -850,7 +850,7 @@ class PaymentSDK
             throw new \Exception('Public Key is required');
         }
 
-        // URL 格式: https://main-stg.bindo.co/svc/user/api/v1/{business_id}/app
+        // URL format: https://main-stg.bindo.co/svc/user/api/v1/{business_id}/app
         $environment = isset($this->options['environment']) ? $this->options['environment'] : 'stg';
         $baseUrl = ($environment === 'prod')
             ? 'https://main.bindo.co'
@@ -872,11 +872,11 @@ class PaymentSDK
             'Accept: application/json',
             'Content-Type: application/json'
         ];
-        // 将 PEM 格式的公钥转换为 Base64 格式
-        // API 期望的是整个 PEM 文件(包括头尾)的 Base64 编码
+        // Convert PEM format public key to Base64 format
+        // API expects Base64 encoding of the entire PEM file (including header and footer)
         $publicKeyBase64 = base64_encode($publicKey);
 
-        // 请求体包含公钥 - 参数名必须是 signature_public_key,值必须是 Base64 格式
+        // Request body contains public key - parameter name must be signature_public_key, value must be Base64 format
         $body = json_encode([
             'signature_public_key' => $publicKeyBase64
         ]);
