@@ -1,7 +1,7 @@
 <?php
 
 
-
+namespace WonderPayment;
 class PaymentSDK
 {
     // QR code login constants
@@ -33,7 +33,8 @@ class PaymentSDK
     private $userAccessToken;
     private $language;
 
-    public function __construct($options) {
+    public function __construct($options)
+    {
         $this->options = $options;
 
         // Check if required parameters exist
@@ -62,44 +63,52 @@ class PaymentSDK
     /**
      * Initialize QR code login constants
      *
-     * @param string $environment Environment ('stg' or 'prod')
+     * @param string $environment Environment ('stg', 'alpha', or 'prod')
      */
     private function initQRCodeConstants($environment)
     {
-        if ($environment === 'prod') {
-            // Production environment configuration (TBD)
-            $this->qrCodeClientId = ''; // TBD
-            $this->qrCodeAppKey = ''; // TBD
-            $this->qrCodeAppSlug = ''; // TBD
-            $this->qrCodeLinkClientId = ''; // TBD
+        if ($environment === 'alpha') {
+            // Alpha environment configuration
+            $this->qrCodeClientId = '2adf8123-d65e-435e-a7c2-e0f90edd2b3d';
+            $this->qrCodeAppKey = '6bad4911-baa7-4588-997c-09d23d1072df';
+            $this->qrCodeAppSlug = 'JgG9C';
+            $this->qrCodeLinkClientId = '2adf8123-d65e-435e-a7c2-e0f90edd2b3d';
+        } elseif ($environment === 'prod') {
+            // Production environment configuration
+            $this->qrCodeClientId = '17175e11-d12b-43a1-b00e-ceca79876f45';
+            $this->qrCodeAppKey = '9a54ed52-7a2c-4d08-aabc-4e1c548fff02';
+            $this->qrCodeAppSlug = '3rTiiv';
+            $this->qrCodeLinkClientId = '17175e11-d12b-43a1-b00e-ceca79876f45';
         } else {
             // Test environment configuration
             $this->qrCodeClientId = 'c4a2b6cf-983a-4117-b75f-bbeac3897c0f';
             $this->qrCodeAppKey = '02eb3362-1ccb-4063-8f5e-825fde761efb';
             $this->qrCodeAppSlug = '3Kswi8';
-            $this->qrCodeLinkClientId = '3b95c5102ac5973893fdb3b64bce4206';
+            $this->qrCodeLinkClientId = 'c4a2b6cf-983a-4117-b75f-bbeac3897c0f';
         }
     }
 
-    public function verify() {
+    public function verify()
+    {
         return true;
     }
 
     /**
      * @throws Exception
      */
-    public function createPaymentLink($params) {
-        if(!is_array($params)) {
+    public function createPaymentLink($params)
+    {
+        if (!is_array($params)) {
             throw new \Exception('Parameters must be an array');
         }
         $order = $params['order'];
-        if(!is_array($order)) {
+        if (!is_array($order)) {
             throw new \Exception('order must be an array');
         }
-        if(empty($order['reference_number'])) {
+        if (empty($order['reference_number'])) {
             throw new \Exception('Order reference number must be provided');
         }
-        if(empty($order['charge_fee'])) {
+        if (empty($order['charge_fee'])) {
             throw new \Exception('Order charge fee must be provided');
         }
         $order['callback_url'] = $this->options['callback_url'];
@@ -107,45 +116,46 @@ class PaymentSDK
         $params['order'] = $order;
 
         // Call internal request method to create payment link
-        return $this->_request("POST","/svc/payment/api/v1/openapi/orders?with_payment_link=true", null, $params);
+        return $this->_request("POST", "/svc/payment/api/v1/openapi/orders?with_payment_link=true", null, $params);
 
     }
 
-    public function voidTransaction($params) {
-        if(!is_array($params)) {
+    public function voidTransaction($params)
+    {
+        if (!is_array($params)) {
             throw new \Exception('Parameters must be an array');
         }
 
         $order = isset($params['order']) ? $params['order'] : null;
         $transaction = isset($params['transaction']) ? $params['transaction'] : null;
 
-        if(!is_array($order)) {
+        if (!is_array($order)) {
             throw new \Exception('order must be an array');
         }
 
-        if(!is_array($transaction)) {
+        if (!is_array($transaction)) {
             throw new \Exception('transaction must be an array');
         }
 
-        if(empty($order['reference_number']) && empty($order['number'])) {
+        if (empty($order['reference_number']) && empty($order['number'])) {
             throw new \Exception('Order reference number or number must be provided');
         }
 
-        if(empty($transaction['uuid'])) {
+        if (empty($transaction['uuid'])) {
             throw new \Exception('Transaction UUID must be provided');
         }
 
         // Check if transaction can be voided
         $orderResponse = $this->queryOrder($params);
-        if(isset($orderResponse['data']['transactions']) && is_array($orderResponse['data']['transactions'])) {
+        if (isset($orderResponse['data']['transactions']) && is_array($orderResponse['data']['transactions'])) {
             $allowedVoid = false;
-            foreach($orderResponse['data']['transactions'] as $t) {
-                if(isset($t['allowed_void']) && $t['allowed_void'] === true) {
+            foreach ($orderResponse['data']['transactions'] as $t) {
+                if (isset($t['allowed_void']) && $t['allowed_void'] === true) {
                     $allowedVoid = true;
                     break;
                 }
             }
-            if(!$allowedVoid) {
+            if (!$allowedVoid) {
                 throw new \Exception('Transaction cannot be voided');
             }
         }
@@ -153,8 +163,9 @@ class PaymentSDK
         return $this->_request("POST", "/svc/payment/api/v1/openapi/orders/void", null, $params);
     }
 
-    public function refundTransaction($params) {
-        if(!is_array($params)) {
+    public function refundTransaction($params)
+    {
+        if (!is_array($params)) {
             throw new \Exception('Parameters must be an array');
         }
 
@@ -162,50 +173,51 @@ class PaymentSDK
         $transaction = isset($params['transaction']) ? $params['transaction'] : null;
         $refund = isset($params['refund']) ? $params['refund'] : null;
 
-        if(!is_array($order)) {
+        if (!is_array($order)) {
             throw new \Exception('order must be an array');
         }
 
-        if(!is_array($transaction)) {
+        if (!is_array($transaction)) {
             throw new \Exception('transaction must be an array');
         }
 
-        if(!is_array($refund)) {
+        if (!is_array($refund)) {
             throw new \Exception('refund must be an array');
         }
 
-        if(empty($order['reference_number']) && empty($order['number'])) {
+        if (empty($order['reference_number']) && empty($order['number'])) {
             throw new \Exception('Order reference number or number must be provided');
         }
 
-        if(empty($transaction['uuid'])) {
+        if (empty($transaction['uuid'])) {
             throw new \Exception('Transaction UUID must be provided');
         }
 
-        if(empty($refund['amount'])) {
+        if (empty($refund['amount'])) {
             throw new \Exception('Refund amount must be provided');
         }
 
         return $this->_request("POST", "/svc/payment/api/v1/openapi/orders/refund", null, $params);
     }
 
-    public function voidOrder($params) {
-        if(!is_array($params)) {
+    public function voidOrder($params)
+    {
+        if (!is_array($params)) {
             throw new \Exception('Parameters must be an array');
         }
 
         $order = isset($params['order']) ? $params['order'] : null;
         $transaction = isset($params['transaction']) ? $params['transaction'] : null;
 
-        if(!is_array($order)) {
+        if (!is_array($order)) {
             throw new \Exception('order must be an array');
         }
 
         // Check payment status
         $orderResponse = $this->queryOrder($params);
-        if(isset($orderResponse['data']['order']['correspondence_state'])) {
+        if (isset($orderResponse['data']['order']['correspondence_state'])) {
             $correspondenceState = $orderResponse['data']['order']['correspondence_state'];
-            if($correspondenceState !== 'unpaid') {
+            if ($correspondenceState !== 'unpaid') {
                 throw new \Exception('Order cannot be voided. Current state: ' . $correspondenceState);
             }
         }
@@ -213,25 +225,33 @@ class PaymentSDK
         return $this->_request("POST", "/svc/payment/api/v1/openapi/orders/void", null, $params);
     }
 
-    public function queryOrder($params) {
-        if(!is_array($params)) {
+    public function queryOrder($params)
+    {
+        if (!is_array($params)) {
             throw new \Exception('Parameters must be an array');
         }
         $order = $params['order'];
-        if(!is_array($order)) {
+        if (!is_array($order)) {
             throw new \Exception('order must be an array');
         }
-        if(empty($order['reference_number'])) {
+        if (empty($order['reference_number'])) {
             throw new \Exception('Order reference number must be provided');
         }
-        return $this->_request("POST","/svc/payment/api/v1/openapi/orders/check", null, $params);
+        return $this->_request("POST", "/svc/payment/api/v1/openapi/orders/check", null, $params);
     }
 
 
-    private function _request($method, $uri, $queryParams = array(), $body = array()) {
+    private function _request($method, $uri, $queryParams = array(), $body = array())
+    {
         // Build complete URL
         $environment = isset($this->options['environment']) ? $this->options['environment'] : 'stg';
-        $apiEndpoint = ($environment === 'prod') ? 'https://gateway.wonder.today' : 'https://gateway-stg.wonder.today';
+        if ($environment === 'prod') {
+            $apiEndpoint = 'https://gateway.wonder.today';
+        } elseif ($environment === 'alpha') {
+            $apiEndpoint = 'https://gateway-alpha.wonder.today';
+        } else {
+            $apiEndpoint = 'https://gateway-stg.wonder.today';
+        }
         $fullUrl = $apiEndpoint . $uri;
 
         // Add query parameters to URL if present
@@ -303,7 +323,8 @@ class PaymentSDK
      * @param int $length String length
      * @return string Random string
      */
-    private function generateRandomString($length) {
+    private function generateRandomString($length)
+    {
         $alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         $randomString = '';
         $alphabetLength = strlen($alphabet);
@@ -323,7 +344,8 @@ class PaymentSDK
      * @param string $body Request body
      * @return string Pre-sign string
      */
-    public function generatePreSignString($method, $uri, $body = null) {
+    public function generatePreSignString($method, $uri, $body = null)
+    {
         $content = strtoupper($method) . "\n" . $uri;
 
         if ($body !== null && strlen($body) > 0) {
@@ -343,7 +365,8 @@ class PaymentSDK
      * @param string $body Request body
      * @return string Signature message
      */
-    public function generateSignatureMessage($credential, $nonce, $method, $uri, $body = null) {
+    public function generateSignatureMessage($credential, $nonce, $method, $uri, $body = null)
+    {
         // Parse credential
         $parsedCredential = explode('/', $credential);
         $requestTime = $parsedCredential[1];
@@ -419,7 +442,7 @@ class PaymentSDK
             if (isset($response['data']) && isset($response['data']['payment_link']) && !empty($response['data']['payment_link'])) {
                 // Verification successful, return business data and true
                 return [
-                    'business' => isset($response['data']['order']['business']) ? $response['data']['order']['business']: null,
+                    'business' => isset($response['data']['order']['business']) ? $response['data']['order']['business'] : null,
                     'success' => true
                 ];
             }
@@ -490,25 +513,29 @@ class PaymentSDK
         $headers[] = 'X-Request-ID: ' . $this->requestId; // Add X-Request-ID header, use the provided request_id
         return $headers;
     }
+
     /**
      * Generate default request_id
      *
      * @return string Generated request_id
      */
-    private function generateRequestId() {
+    private function generateRequestId()
+    {
         return uniqid('req_', true);
     }
 
     /**
      * _signature is implemented in generateAuthHeaders
      * */
-    private function _signature($method,$uri,$body = '') {
+    private function _signature($method, $uri, $body = '')
+    {
         return array(
             'Credential' => '',
             'Signature' => '',
             'Nonce' => ''
         );
     }
+
     /**
      * Generate RSA key pair
      *
@@ -555,9 +582,13 @@ class PaymentSDK
     private function getQRCodeBaseUrl()
     {
         $environment = isset($this->options['environment']) ? $this->options['environment'] : 'stg';
-        return ($environment === 'prod')
-            ? 'https://main.bindo.co'
-            : 'https://main-stg.bindo.co';
+        if ($environment === 'prod') {
+            return 'https://main.bindo.co';
+        }
+        if ($environment === 'alpha') {
+            return 'https://main-alpha.bindo.co';
+        }
+        return 'https://main-stg.bindo.co';
     }
 
     /**
@@ -568,9 +599,13 @@ class PaymentSDK
     private function getQRCodeGatewayBaseUrl()
     {
         $environment = isset($this->options['environment']) ? $this->options['environment'] : 'stg';
-        return ($environment === 'prod')
-            ? 'https://gateway.wonder.app'
-            : 'https://gateway-stg.wonder.app';
+        if ($environment === 'prod') {
+            return 'https://gateway.wonder.app';
+        }
+        if ($environment === 'alpha') {
+            return 'https://gateway-alpha.wonder.app';
+        }
+        return 'https://gateway-stg.wonder.app';
     }
 
     /**
@@ -723,6 +758,21 @@ class PaymentSDK
      */
     private function makeQRCodeRequest($method, $url, $headers, $body = null)
     {
+        $logger = null;
+        if (function_exists('wc_get_logger')) {
+            $logger = wc_get_logger();
+        }
+
+        $redactedHeaders = [];
+        foreach ($headers as $header) {
+            if (stripos($header, 'authorization:') === 0 || stripos($header, 'x-user-access-token:') === 0) {
+                $parts = explode(':', $header, 2);
+                $redactedHeaders[] = $parts[0] . ': ***';
+            } else {
+                $redactedHeaders[] = $header;
+            }
+        }
+
         $ch = curl_init();
 
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -746,6 +796,16 @@ class PaymentSDK
         $error = curl_error($ch);
 
         if ($error) {
+            if ($logger) {
+                $logger->error('SDK request cURL error', [
+                    'source' => 'wonder-payments',
+                    'method' => $method,
+                    'url' => $url,
+                    'headers' => $redactedHeaders,
+                    'body' => $body,
+                    'error' => $error
+                ]);
+            }
             curl_close($ch);
             throw new \Exception('cURL error: ' . $error);
         }
@@ -756,15 +816,63 @@ class PaymentSDK
 
         // Check API returned errors
         if (isset($responseData['code']) && $responseData['code'] != 200) {
-            throw new \Exception('API error: ' . ($responseData['error_message'] ? $responseData['message'] : 'Unknown error'));
+            $errorMessage = !empty($responseData['error_message'])
+                ? $responseData['error_message']
+                : (!empty($responseData['message']) ? $responseData['message'] : 'Unknown error');
+            if ($logger) {
+                $logger->error('SDK request API error', [
+                    'source' => 'wonder-payments',
+                    'method' => $method,
+                    'url' => $url,
+                    'headers' => $redactedHeaders,
+                    'body' => $body,
+                    'http_status' => $httpCode,
+                    'response' => $responseData
+                ]);
+            }
+            throw new \Exception('API error: ' . $errorMessage);
         }
 
         if ($httpCode >= 400) {
+            if ($logger) {
+                $logger->error('SDK request HTTP error', [
+                    'source' => 'wonder-payments',
+                    'method' => $method,
+                    'url' => $url,
+                    'headers' => $redactedHeaders,
+                    'body' => $body,
+                    'http_status' => $httpCode,
+                    'response' => $response
+                ]);
+            }
             throw new \Exception('API request failed, HTTP status: ' . $httpCode . ', Response: ' . $response);
         }
 
         if ($responseData === null) {
+            if ($logger) {
+                $logger->error('SDK request invalid JSON', [
+                    'source' => 'wonder-payments',
+                    'method' => $method,
+                    'url' => $url,
+                    'headers' => $redactedHeaders,
+                    'body' => $body,
+                    'http_status' => $httpCode,
+                    'response' => $response
+                ]);
+            }
             throw new \Exception('Failed to parse API response: ' . $response);
+        }
+
+        if ($logger) {
+            $logger->debug('SDK request success', [
+                'source' => 'wonder-payments',
+                'method' => $method,
+                'url' => $url,
+                'headers' => $redactedHeaders,
+                'body' => $body,
+                'http_status' => $httpCode,
+                'response' => $responseData
+            ]);
         }
 
         return $responseData;
@@ -850,11 +958,15 @@ class PaymentSDK
             throw new \Exception('Public Key is required');
         }
 
-        // URL format: https://main-stg.bindo.co/svc/user/api/v1/{business_id}/app
+        // URL format: https://main-<env>.bindo.co/svc/user/api/v1/{business_id}/app
         $environment = isset($this->options['environment']) ? $this->options['environment'] : 'stg';
-        $baseUrl = ($environment === 'prod')
-            ? 'https://main.bindo.co'
-            : 'https://main-stg.bindo.co';
+        if ($environment === 'prod') {
+            $baseUrl = 'https://main.bindo.co';
+        } elseif ($environment === 'alpha') {
+            $baseUrl = 'https://main-alpha.bindo.co';
+        } else {
+            $baseUrl = 'https://main-stg.bindo.co';
+        }
 
         $url = $baseUrl . '/svc/user/api/v1/' . $businessId . '/app';
         $requestId = $this->generateUUIDv4();
@@ -881,5 +993,135 @@ class PaymentSDK
             'signature_public_key' => $publicKeyBase64
         ]);
         return $this->makeQRCodeRequest('POST', $url, $headers, $body);
+    }
+
+    /**
+     * Fetch current user info by access token
+     *
+     * @return array
+     * @throws \Exception
+     */
+    public function getUserInfo()
+    {
+        if (empty($this->userAccessToken)) {
+            throw new \Exception('User Access Token is required to fetch user info');
+        }
+
+        $url = $this->getQRCodeBaseUrl() . '/user/b2c/me';
+        $requestId = $this->generateUUIDv4();
+
+        $headers = [
+            'x-app-key: ' . $this->qrCodeAppKey,
+            'x-app-slug: ' . $this->qrCodeAppSlug,
+            'x-client-id: ' . $this->qrCodeClientId,
+            'x-i18n-lang: ' . $this->language,
+            'x-internal: TRUE',
+            'x-request-id: ' . $requestId,
+            'x-user-access-token: ' . $this->userAccessToken,
+            'Accept: application/json'
+        ];
+
+        return $this->makeQRCodeRequest('GET', $url, $headers, null);
+    }
+
+    /**
+     * Sandbox public login
+     *
+     * @param string $referenceId
+     * @return array
+     * @throws \Exception
+     */
+    public function sandboxPublicLogin($referenceId)
+    {
+        if (empty($this->userAccessToken)) {
+            throw new \Exception('User Access Token is required for sandbox public login');
+        }
+
+        if (empty($referenceId)) {
+            throw new \Exception('reference_id is required for sandbox public login');
+        }
+
+        $requestId = $this->generateUUIDv4();
+
+//        $headers = [
+//            'x-app-key: 6bad4911-baa7-4588-997c-09d23d1072df',
+//            'x-app-slug: JgG9C',
+//            'x-client-id: c4a2b6cf-983a-4117-b75f-bbeac3897c0f',
+//            'x-i18n-lang: zh-CN',
+//            'x-internal: TRUE',
+//            'x-request-id: ' . $requestId,
+//            'x-user-access-token: ' . $this->userAccessToken,
+//            'Accept: application/json',
+//            'Content-Type: application/json'
+//        ];
+        $headers = [
+            'x-app-key: ' . $this->qrCodeAppKey,
+            'x-app-slug: ' . $this->qrCodeAppSlug,
+            'x-client-id: ' . $this->qrCodeClientId,
+            'x-i18n-lang: ' . $this->language,
+            'x-internal: TRUE',
+            'x-request-id: ' . $requestId,
+            'x-user-access-token: ' . $this->userAccessToken,
+            'Accept: application/json',
+            'Content-Type: application/json'
+        ];
+
+        $body = json_encode([
+            'reference_id' => $referenceId
+        ]);
+
+        $url = 'https://main-stg.bindo.co/svc/user/public/login';
+        return $this->makeQRCodeRequest('POST', $url, $headers, $body);
+    }
+
+    /**
+     * Sandbox onboarding business
+     *
+     * @param string $sandboxUserId
+     * @param string $sandboxUserToken
+     * @param string $pBusinessId
+     * @param string $sandboxBusinessName
+     * @return array
+     * @throws \Exception
+     */
+    public function sandboxOnboardingBusiness($sandboxUserId, $sandboxUserToken, $pBusinessId, $sandboxBusinessName = '')
+    {
+        if (empty($this->userAccessToken)) {
+            throw new \Exception('User Access Token is required for sandbox onboarding');
+        }
+        if (empty($sandboxUserId) || empty($sandboxUserToken)) {
+            throw new \Exception('sandbox_user_id and sandbox_user_token are required');
+        }
+        if (empty($pBusinessId)) {
+            throw new \Exception('p_business_id is required');
+        }
+
+        $requestId = $this->generateUUIDv4();
+        $url = 'https://gateway-alpha.wonder.app/api/registry/onboarding/sandbox/business';
+
+        $headers = [
+            'x-app-key: 6bad4911-baa7-4588-997c-09d23d1072df',
+            'x-app-slug: JgG9C',
+            'x-client-id: 2adf8123-d65e-435e-a7c2-e0f90edd2b3d',
+            'x-i18n-lang: zh-CN',
+            'x-internal: TRUE',
+            'x-p-business-id: ' . $pBusinessId,
+            'x-request-id: ' . $requestId,
+            'x-user-access-token: ' . $this->userAccessToken,
+            'Accept: application/json',
+            'Content-Type: application/json'
+        ];
+
+        $body = [
+            'sandbox_user_id' => $sandboxUserId,
+            'sandbox_user_token' => $sandboxUserToken,
+            'p_business_id' => $pBusinessId
+        ];
+
+        if (!empty($sandboxBusinessName)) {
+            $body['sandbox_business_name'] = $sandboxBusinessName;
+        }
+
+        return $this->makeQRCodeRequest('POST', $url, $headers, json_encode($body));
     }
 }
