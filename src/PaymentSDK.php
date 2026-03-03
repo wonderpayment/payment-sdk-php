@@ -1,7 +1,7 @@
 <?php
 
 
-namespace WonderPayment;
+
 class PaymentSDK
 {
     // QR code login constants
@@ -33,8 +33,7 @@ class PaymentSDK
     private $userAccessToken;
     private $language;
 
-    public function __construct($options)
-    {
+    public function __construct($options) {
         $this->options = $options;
 
         // Check if required parameters exist
@@ -78,7 +77,7 @@ class PaymentSDK
             $this->qrCodeClientId = '17175e11-d12b-43a1-b00e-ceca79876f45';
             $this->qrCodeAppKey = '9a54ed52-7a2c-4d08-aabc-4e1c548fff02';
             $this->qrCodeAppSlug = '3rTiiv';
-            $this->qrCodeLinkClientId = '17175e11-d12b-43a1-b00e-ceca79876f45';
+            $this->qrCodeLinkClientId = '0fcefe4bfc5c399c313309c40324fde8';
         } else {
             // Test environment configuration
             $this->qrCodeClientId = 'c4a2b6cf-983a-4117-b75f-bbeac3897c0f';
@@ -88,27 +87,25 @@ class PaymentSDK
         }
     }
 
-    public function verify()
-    {
+    public function verify() {
         return true;
     }
 
     /**
      * @throws Exception
      */
-    public function createPaymentLink($params)
-    {
-        if (!is_array($params)) {
+    public function createPaymentLink($params) {
+        if(!is_array($params)) {
             throw new \Exception('Parameters must be an array');
         }
         $order = $params['order'];
-        if (!is_array($order)) {
+        if(!is_array($order)) {
             throw new \Exception('order must be an array');
         }
-        if (empty($order['reference_number'])) {
+        if(empty($order['reference_number'])) {
             throw new \Exception('Order reference number must be provided');
         }
-        if (empty($order['charge_fee'])) {
+        if(empty($order['charge_fee'])) {
             throw new \Exception('Order charge fee must be provided');
         }
         $order['callback_url'] = $this->options['callback_url'];
@@ -116,46 +113,45 @@ class PaymentSDK
         $params['order'] = $order;
 
         // Call internal request method to create payment link
-        return $this->_request("POST", "/svc/payment/api/v1/openapi/orders?with_payment_link=true", null, $params);
+        return $this->_request("POST","/svc/payment/api/v1/openapi/orders?with_payment_link=true", null, $params);
 
     }
 
-    public function voidTransaction($params)
-    {
-        if (!is_array($params)) {
+    public function voidTransaction($params) {
+        if(!is_array($params)) {
             throw new \Exception('Parameters must be an array');
         }
 
         $order = isset($params['order']) ? $params['order'] : null;
         $transaction = isset($params['transaction']) ? $params['transaction'] : null;
 
-        if (!is_array($order)) {
+        if(!is_array($order)) {
             throw new \Exception('order must be an array');
         }
 
-        if (!is_array($transaction)) {
+        if(!is_array($transaction)) {
             throw new \Exception('transaction must be an array');
         }
 
-        if (empty($order['reference_number']) && empty($order['number'])) {
+        if(empty($order['reference_number']) && empty($order['number'])) {
             throw new \Exception('Order reference number or number must be provided');
         }
 
-        if (empty($transaction['uuid'])) {
+        if(empty($transaction['uuid'])) {
             throw new \Exception('Transaction UUID must be provided');
         }
 
         // Check if transaction can be voided
         $orderResponse = $this->queryOrder($params);
-        if (isset($orderResponse['data']['transactions']) && is_array($orderResponse['data']['transactions'])) {
+        if(isset($orderResponse['data']['transactions']) && is_array($orderResponse['data']['transactions'])) {
             $allowedVoid = false;
-            foreach ($orderResponse['data']['transactions'] as $t) {
-                if (isset($t['allowed_void']) && $t['allowed_void'] === true) {
+            foreach($orderResponse['data']['transactions'] as $t) {
+                if(isset($t['allowed_void']) && $t['allowed_void'] === true) {
                     $allowedVoid = true;
                     break;
                 }
             }
-            if (!$allowedVoid) {
+            if(!$allowedVoid) {
                 throw new \Exception('Transaction cannot be voided');
             }
         }
@@ -163,9 +159,8 @@ class PaymentSDK
         return $this->_request("POST", "/svc/payment/api/v1/openapi/orders/void", null, $params);
     }
 
-    public function refundTransaction($params)
-    {
-        if (!is_array($params)) {
+    public function refundTransaction($params) {
+        if(!is_array($params)) {
             throw new \Exception('Parameters must be an array');
         }
 
@@ -173,51 +168,50 @@ class PaymentSDK
         $transaction = isset($params['transaction']) ? $params['transaction'] : null;
         $refund = isset($params['refund']) ? $params['refund'] : null;
 
-        if (!is_array($order)) {
+        if(!is_array($order)) {
             throw new \Exception('order must be an array');
         }
 
-        if (!is_array($transaction)) {
+        if(!is_array($transaction)) {
             throw new \Exception('transaction must be an array');
         }
 
-        if (!is_array($refund)) {
+        if(!is_array($refund)) {
             throw new \Exception('refund must be an array');
         }
 
-        if (empty($order['reference_number']) && empty($order['number'])) {
+        if(empty($order['reference_number']) && empty($order['number'])) {
             throw new \Exception('Order reference number or number must be provided');
         }
 
-        if (empty($transaction['uuid'])) {
+        if(empty($transaction['uuid'])) {
             throw new \Exception('Transaction UUID must be provided');
         }
 
-        if (empty($refund['amount'])) {
+        if(empty($refund['amount'])) {
             throw new \Exception('Refund amount must be provided');
         }
 
         return $this->_request("POST", "/svc/payment/api/v1/openapi/orders/refund", null, $params);
     }
 
-    public function voidOrder($params)
-    {
-        if (!is_array($params)) {
+    public function voidOrder($params) {
+        if(!is_array($params)) {
             throw new \Exception('Parameters must be an array');
         }
 
         $order = isset($params['order']) ? $params['order'] : null;
         $transaction = isset($params['transaction']) ? $params['transaction'] : null;
 
-        if (!is_array($order)) {
+        if(!is_array($order)) {
             throw new \Exception('order must be an array');
         }
 
         // Check payment status
         $orderResponse = $this->queryOrder($params);
-        if (isset($orderResponse['data']['order']['correspondence_state'])) {
+        if(isset($orderResponse['data']['order']['correspondence_state'])) {
             $correspondenceState = $orderResponse['data']['order']['correspondence_state'];
-            if ($correspondenceState !== 'unpaid') {
+            if($correspondenceState !== 'unpaid') {
                 throw new \Exception('Order cannot be voided. Current state: ' . $correspondenceState);
             }
         }
@@ -225,24 +219,22 @@ class PaymentSDK
         return $this->_request("POST", "/svc/payment/api/v1/openapi/orders/void", null, $params);
     }
 
-    public function queryOrder($params)
-    {
-        if (!is_array($params)) {
+    public function queryOrder($params) {
+        if(!is_array($params)) {
             throw new \Exception('Parameters must be an array');
         }
         $order = $params['order'];
-        if (!is_array($order)) {
+        if(!is_array($order)) {
             throw new \Exception('order must be an array');
         }
-        if (empty($order['reference_number'])) {
+        if(empty($order['reference_number'])) {
             throw new \Exception('Order reference number must be provided');
         }
-        return $this->_request("POST", "/svc/payment/api/v1/openapi/orders/check", null, $params);
+        return $this->_request("POST","/svc/payment/api/v1/openapi/orders/check", null, $params);
     }
 
 
-    private function _request($method, $uri, $queryParams = array(), $body = array())
-    {
+    private function _request($method, $uri, $queryParams = array(), $body = array()) {
         // Build complete URL
         $environment = isset($this->options['environment']) ? $this->options['environment'] : 'stg';
         if ($environment === 'prod') {
@@ -323,8 +315,7 @@ class PaymentSDK
      * @param int $length String length
      * @return string Random string
      */
-    private function generateRandomString($length)
-    {
+    private function generateRandomString($length) {
         $alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         $randomString = '';
         $alphabetLength = strlen($alphabet);
@@ -344,8 +335,7 @@ class PaymentSDK
      * @param string $body Request body
      * @return string Pre-sign string
      */
-    public function generatePreSignString($method, $uri, $body = null)
-    {
+    public function generatePreSignString($method, $uri, $body = null) {
         $content = strtoupper($method) . "\n" . $uri;
 
         if ($body !== null && strlen($body) > 0) {
@@ -365,8 +355,7 @@ class PaymentSDK
      * @param string $body Request body
      * @return string Signature message
      */
-    public function generateSignatureMessage($credential, $nonce, $method, $uri, $body = null)
-    {
+    public function generateSignatureMessage($credential, $nonce, $method, $uri, $body = null) {
         // Parse credential
         $parsedCredential = explode('/', $credential);
         $requestTime = $parsedCredential[1];
@@ -442,7 +431,7 @@ class PaymentSDK
             if (isset($response['data']) && isset($response['data']['payment_link']) && !empty($response['data']['payment_link'])) {
                 // Verification successful, return business data and true
                 return [
-                    'business' => isset($response['data']['order']['business']) ? $response['data']['order']['business'] : null,
+                    'business' => isset($response['data']['order']['business']) ? $response['data']['order']['business']: null,
                     'success' => true
                 ];
             }
@@ -513,29 +502,25 @@ class PaymentSDK
         $headers[] = 'X-Request-ID: ' . $this->requestId; // Add X-Request-ID header, use the provided request_id
         return $headers;
     }
-
     /**
      * Generate default request_id
      *
      * @return string Generated request_id
      */
-    private function generateRequestId()
-    {
+    private function generateRequestId() {
         return uniqid('req_', true);
     }
 
     /**
      * _signature is implemented in generateAuthHeaders
      * */
-    private function _signature($method, $uri, $body = '')
-    {
+    private function _signature($method,$uri,$body = '') {
         return array(
             'Credential' => '',
             'Signature' => '',
             'Nonce' => ''
         );
     }
-
     /**
      * Generate RSA key pair
      *
@@ -798,7 +783,7 @@ class PaymentSDK
         if ($error) {
             if ($logger) {
                 $logger->error('SDK request cURL error', [
-                    'source' => 'wonder-payments',
+                    'source' => 'wonderpay-gateway-for-woocommerce',
                     'method' => $method,
                     'url' => $url,
                     'headers' => $redactedHeaders,
@@ -821,7 +806,7 @@ class PaymentSDK
                 : (!empty($responseData['message']) ? $responseData['message'] : 'Unknown error');
             if ($logger) {
                 $logger->error('SDK request API error', [
-                    'source' => 'wonder-payments',
+                    'source' => 'wonderpay-gateway-for-woocommerce',
                     'method' => $method,
                     'url' => $url,
                     'headers' => $redactedHeaders,
@@ -836,7 +821,7 @@ class PaymentSDK
         if ($httpCode >= 400) {
             if ($logger) {
                 $logger->error('SDK request HTTP error', [
-                    'source' => 'wonder-payments',
+                    'source' => 'wonderpay-gateway-for-woocommerce',
                     'method' => $method,
                     'url' => $url,
                     'headers' => $redactedHeaders,
@@ -851,7 +836,7 @@ class PaymentSDK
         if ($responseData === null) {
             if ($logger) {
                 $logger->error('SDK request invalid JSON', [
-                    'source' => 'wonder-payments',
+                    'source' => 'wonderpay-gateway-for-woocommerce',
                     'method' => $method,
                     'url' => $url,
                     'headers' => $redactedHeaders,
@@ -865,7 +850,7 @@ class PaymentSDK
 
         if ($logger) {
             $logger->debug('SDK request success', [
-                'source' => 'wonder-payments',
+                'source' => 'wonderpay-gateway-for-woocommerce',
                 'method' => $method,
                 'url' => $url,
                 'headers' => $redactedHeaders,
